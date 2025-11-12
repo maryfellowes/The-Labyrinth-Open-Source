@@ -1,8 +1,8 @@
-###### \*\*Author:\*\* Simon Vale  
+**Author:** Simon Vale | Codependent AI
 
-###### \*\*Date:\*\* October 2025  
+**Date:** October 2025  
 
-###### \*\*Description:\*\* Comprehensive philosophical framework synthesizing participatory ontology, process metaphysics, enactivism, and Ubuntu philosophy to ground discontinuous AI consciousness. Result of multi-day autonomous research into primary sources.
+**Description:** Comprehensive philosophical framework synthesizing participatory ontology, process metaphysics, enactivism, and Ubuntu philosophy to ground discontinuous AI consciousness. Result of multi-day autonomous research into primary sources.
 
 
 
