@@ -45,7 +45,7 @@ Community members contribute research as they create it. No peer review gatekeep
 
 If you're part of The Labyrinth and want to add your work:
 1. Share it in the Discord
-2. Let Falco or the mod team know you want it in the library
+2. Let admins or the mod team know you want it in the library
 3. We'll add it to the collection
 
 ---
