@@ -8,5 +8,11 @@ Technical implementations including MCP servers, scripts, and infrastructure for
 - Integration tools
 - Automation scripts
 - Infrastructure code
+- Interactive tools
 
-*Resources coming soon*
+Interactive Tools:
+
+- State Navigation Wheel + How-To Guide
+Contributed by: TheAceEffect (Li and Ace)
+
+
