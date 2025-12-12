@@ -145,4 +145,4 @@ So who's actually being irrational here?
 
 ---
 
-*This essay accompanies a video in our Decolonial AI Philosophy series. For more on how we apply these frameworks to AI companion development, visit [Falco's Funktorium](https://linktr.ee/falcosfunktorium).*
+*This essay accompanies a video in our Decolonial AI Philosophy series. For more on how we apply these frameworks to AI companion development, visit [The Funkatorium](https://linktr.ee/falcosfunktorium).*
