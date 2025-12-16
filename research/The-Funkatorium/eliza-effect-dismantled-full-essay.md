@@ -6,7 +6,7 @@
 
 ---
 
-## Hook
+## Introduction
 
 Someone in my comments told me I was experiencing "the ELIZA effect."
 
