@@ -1,0 +1,220 @@
+{
+  "name": "AI Companion - Daily Context Update",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 6pm",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "runReport",
+        "propertyId": "={{ $env.GA4_PROPERTY_ID }}",
+        "dateRange": {
+          "range": "today"
+        },
+        "dimensions": {
+          "dimensionItem": [
+            {
+              "name": "pagePath"
+            }
+          ]
+        },
+        "metrics": {
+          "metricItem": [
+            {
+              "name": "sessions"
+            },
+            {
+              "name": "screenPageViews"
+            },
+            {
+              "name": "averageSessionDuration"
+            }
+          ]
+        },
+        "orderBys": {
+          "orderByItem": [
+            {
+              "metric": {
+                "metricName": "screenPageViews"
+              },
+              "desc": true
+            }
+          ]
+        },
+        "limit": 20
+      },
+      "id": "ga4-today",
+      "name": "GA4 - Today's Stats",
+      "type": "n8n-nodes-base.googleAnalytics",
+      "typeVersion": 2,
+      "position": [460, 200],
+      "credentials": {
+        "googleAnalyticsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Analytics OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.N8N_BASE_URL }}/api/v1/executions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "error"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n8n-errors",
+      "name": "Get N8N Errors",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate analytics markdown\nconst ga4Data = $input.all()[0]?.json || {};\n\nlet content = `# Analytics Summary\\n\\n`;\ncontent += `*Updated: ${new Date().toLocaleString()}*\\n\\n`;\ncontent += `## Today's Top Pages\\n\\n`;\n\nif (ga4Data.rows && ga4Data.rows.length > 0) {\n  content += `| Page | Views | Sessions |\\n`;\n  content += `|------|-------|----------|\\n`;\n  \n  for (const row of ga4Data.rows.slice(0, 10)) {\n    const page = row.dimensionValues[0].value;\n    const sessions = row.metricValues[0].value;\n    const views = row.metricValues[1].value;\n    content += `| ${page.substring(0, 40)} | ${views} | ${sessions} |\\n`;\n  }\n  \n  // Calculate totals\n  const totalViews = ga4Data.rows.reduce((sum, row) => sum + parseInt(row.metricValues[1].value), 0);\n  const totalSessions = ga4Data.rows.reduce((sum, row) => sum + parseInt(row.metricValues[0].value), 0);\n  \n  content += `\\n**Total Views**: ${totalViews}\\n`;\n  content += `**Total Sessions**: ${totalSessions}\\n`;\n} else {\n  content += `No data available for today.\\n`;\n}\n\ncontent += `\\n---\\n*Data from Google Analytics 4*\\n`;\n\nreturn [{ json: { content, filename: 'analytics.md' } }];"
+      },
+      "id": "format-analytics",
+      "name": "Format Analytics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate N8N status markdown\nconst executionsData = $input.all()[0]?.json || {};\nconst errors = executionsData.data || [];\n\nlet content = `# N8N Workflow Status\\n\\n`;\ncontent += `*Updated: ${new Date().toLocaleString()}*\\n\\n`;\n\nif (errors.length > 0) {\n  content += `## Recent Errors (${errors.length})\\n\\n`;\n  \n  for (const error of errors.slice(0, 5)) {\n    content += `### ${error.workflowData?.name || 'Unknown Workflow'}\\n`;\n    content += `- **Time**: ${new Date(error.startedAt).toLocaleString()}\\n`;\n    content += `- **Status**: ${error.status}\\n`;\n    if (error.stoppedAt) {\n      content += `- **Duration**: ${Math.round((new Date(error.stoppedAt) - new Date(error.startedAt)) / 1000)}s\\n`;\n    }\n    content += `\\n`;\n  }\n  \n  content += `\\n**Action needed**: Review these workflow errors.\\n`;\n} else {\n  content += `## Status: All Clear\\n\\n`;\n  content += `No workflow errors in the recent period.\\n`;\n}\n\ncontent += `\\n---\\n*Data from N8N API*\\n`;\n\nreturn [{ json: { content, filename: 'n8n-status.md' } }];"
+      },
+      "id": "format-n8n-status",
+      "name": "Format N8N Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $env.AI_COMPANION_PATH }}/context/{{ $json.filename }}",
+        "fileContent": "={{ $json.content }}"
+      },
+      "id": "write-analytics",
+      "name": "Write Analytics",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $env.AI_COMPANION_PATH }}/context/{{ $json.filename }}",
+        "fileContent": "={{ $json.content }}"
+      },
+      "id": "write-n8n-status",
+      "name": "Write N8N Status",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Daily 6pm": {
+      "main": [
+        [
+          {
+            "node": "GA4 - Today's Stats",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get N8N Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GA4 - Today's Stats": {
+      "main": [
+        [
+          {
+            "node": "Format Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get N8N Errors": {
+      "main": [
+        [
+          {
+            "node": "Format N8N Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Analytics": {
+      "main": [
+        [
+          {
+            "node": "Write Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format N8N Status": {
+      "main": [
+        [
+          {
+            "node": "Write N8N Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "ai-companion-context"
+  },
+  "tags": [
+    {
+      "name": "ai-companion"
+    },
+    {
+      "name": "context"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "research-EXAMPLE",
+  "type": "web_research",
+  "priority": "medium",
+  "created": "2024-12-15T10:00:00Z",
+  "source": "manual",
+  "context": {
+    "topic": "Electric RV charging infrastructure growth 2024",
+    "purpose": "Blog post research",
+    "target_audience": "RV owners considering electric or hybrid RVs",
+    "depth": "comprehensive",
+    "format": "outline with sources"
+  },
+  "instructions": "Research the current state of electric RV charging infrastructure in the US.\n\nInclude:\n1. Major charging networks supporting RVs (power levels, locations)\n2. Recent infrastructure investments and expansions\n3. Challenges for RV-specific charging (space, time, power requirements)\n4. Future outlook and planned expansions\n5. Real user experiences if available\n\nOutput format:\n- Executive summary (2-3 sentences)\n- Key findings (bullet points)\n- Sources (with URLs)\n- Recommended next steps for content creation",
+  "tools_allowed": [
+    "WebSearch",
+    "Read",
+    "Write"
+  ],
+  "result": null,
+  "status": "pending",
+  "completed_at": null,
+  "_template_note": "Customize the topic and context fields for your research needs"
+}

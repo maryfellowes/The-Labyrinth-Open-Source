@@ -1,0 +1,27 @@
+{
+  "id": "daily-briefing-EXAMPLE",
+  "type": "daily_briefing",
+  "priority": "high",
+  "created": "2024-12-15T09:00:00Z",
+  "source": "scheduled",
+  "context": {
+    "focus_areas": [
+      "content performance",
+      "pending tasks",
+      "upcoming deadlines"
+    ],
+    "notification_channel": "discord",
+    "discord_channel_id": "YOUR_CHANNEL_ID",
+    "brevity": "concise"
+  },
+  "instructions": "Generate a morning briefing for your human.\n\nReview:\n1. context/analytics.md - Any notable traffic changes?\n2. tasks/pending/ - What's waiting to be done?\n3. journal/ - What did you accomplish yesterday?\n4. status.md - Any upcoming deadlines or priorities?\n\nCreate a brief (3-5 bullet points) summary of:\n- Most important thing to know this morning\n- Quick wins that could be tackled today\n- Any alerts or concerns\n\nIf Discord is available, send the briefing there.\nAlso save to context/daily-briefing.md for reference.",
+  "tools_allowed": [
+    "Read",
+    "Write",
+    "mcp__discord__send_message"
+  ],
+  "result": null,
+  "status": "pending",
+  "completed_at": null,
+  "_template_note": "Use with N8N to schedule daily at your preferred wake time"
+}

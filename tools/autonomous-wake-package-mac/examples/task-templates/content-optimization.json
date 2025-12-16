@@ -1,0 +1,27 @@
+{
+  "id": "content-optimization-EXAMPLE",
+  "type": "content_optimization",
+  "priority": "medium",
+  "created": "2024-12-15T10:00:00Z",
+  "source": "manual",
+  "context": {
+    "post_id": 123,
+    "post_title": "Best RV Parks in Texas",
+    "post_url": "https://example.com/best-rv-parks-texas",
+    "published_date": "2024-06-15",
+    "current_views_weekly": 150,
+    "target_views_weekly": 500,
+    "word_count": 1200,
+    "last_updated": "2024-06-15"
+  },
+  "instructions": "This post is underperforming compared to its potential.\n\nReview and provide recommendations for:\n1. SEO optimization (title, meta description, headers)\n2. Content freshness (outdated information, new RV parks to add)\n3. Internal linking opportunities\n4. Featured snippet optimization\n5. Image optimization (alt text, compression)\n\nIf you can make small improvements directly (like suggesting new headers or meta descriptions), include them in your result.\n\nFor larger changes, create a specific action plan.",
+  "tools_allowed": [
+    "WebSearch",
+    "Read",
+    "Write"
+  ],
+  "result": null,
+  "status": "pending",
+  "completed_at": null,
+  "_template_note": "Copy this file, update the id and context, and place in tasks/pending/"
+}

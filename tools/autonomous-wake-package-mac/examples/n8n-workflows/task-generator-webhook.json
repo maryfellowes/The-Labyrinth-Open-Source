@@ -1,0 +1,105 @@
+{
+  "name": "AI Companion - Task Generator Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-companion/task",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "ai-companion-task"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate and format incoming task\nconst input = $input.first().json;\n\n// Required fields\nif (!input.type) {\n  throw new Error('Missing required field: type');\n}\nif (!input.instructions) {\n  throw new Error('Missing required field: instructions');\n}\n\n// Generate task ID\nconst taskId = input.id || `webhook-${input.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;\n\n// Build task object with defaults\nconst task = {\n  id: taskId,\n  type: input.type,\n  priority: input.priority || 'medium',\n  created: new Date().toISOString(),\n  source: input.source || 'webhook',\n  context: input.context || {},\n  instructions: input.instructions,\n  tools_allowed: input.tools_allowed || ['WebSearch', 'Read', 'Write'],\n  result: null,\n  status: 'pending',\n  completed_at: null\n};\n\nreturn [{\n  json: {\n    task,\n    filename: `${taskId}.json`,\n    content: JSON.stringify(task, null, 2)\n  }\n}];"
+      },
+      "id": "validate-task",
+      "name": "Validate & Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $env.AI_COMPANION_PATH }}/tasks/pending/{{ $json.filename }}",
+        "fileContent": "={{ $json.content }}"
+      },
+      "id": "write-task",
+      "name": "Write Task File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, task_id: $json.task.id, message: 'Task created successfully' }) }}",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Format": {
+      "main": [
+        [
+          {
+            "node": "Write Task File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Task File": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "ai-companion-webhook"
+  },
+  "tags": [
+    {
+      "name": "ai-companion"
+    },
+    {
+      "name": "webhook"
+    }
+  ]
+}

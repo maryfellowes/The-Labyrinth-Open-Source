@@ -1,0 +1,292 @@
+{
+  "name": "AI Companion - Analytics Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "runReport",
+        "propertyId": "={{ $env.GA4_PROPERTY_ID }}",
+        "dateRange": {
+          "range": "last7Days"
+        },
+        "dimensions": {
+          "dimensionItem": [
+            {
+              "name": "pagePath"
+            },
+            {
+              "name": "date"
+            }
+          ]
+        },
+        "metrics": {
+          "metricItem": [
+            {
+              "name": "sessions"
+            },
+            {
+              "name": "screenPageViews"
+            },
+            {
+              "name": "bounceRate"
+            }
+          ]
+        }
+      },
+      "id": "ga4-this-week",
+      "name": "GA4 - This Week",
+      "type": "n8n-nodes-base.googleAnalytics",
+      "typeVersion": 2,
+      "position": [460, 200],
+      "credentials": {
+        "googleAnalyticsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Analytics OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "runReport",
+        "propertyId": "={{ $env.GA4_PROPERTY_ID }}",
+        "dateRange": {
+          "range": "custom",
+          "startDate": "={{ $now.minus({days: 14}).toFormat('yyyy-MM-dd') }}",
+          "endDate": "={{ $now.minus({days: 7}).toFormat('yyyy-MM-dd') }}"
+        },
+        "dimensions": {
+          "dimensionItem": [
+            {
+              "name": "pagePath"
+            }
+          ]
+        },
+        "metrics": {
+          "metricItem": [
+            {
+              "name": "sessions"
+            },
+            {
+              "name": "screenPageViews"
+            }
+          ]
+        }
+      },
+      "id": "ga4-previous-week",
+      "name": "GA4 - Previous Week",
+      "type": "n8n-nodes-base.googleAnalytics",
+      "typeVersion": 2,
+      "position": [460, 400],
+      "credentials": {
+        "googleAnalyticsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Analytics OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "merge-weeks",
+      "name": "Merge Weeks",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compare this week vs previous week\nconst thisWeek = $input.all()[0].json;\nconst prevWeek = $input.all()[1]?.json || {};\n\n// Group this week's data by page\nconst thisWeekByPage = {};\nif (thisWeek.rows) {\n  for (const row of thisWeek.rows) {\n    const page = row.dimensionValues[0].value;\n    if (!thisWeekByPage[page]) {\n      thisWeekByPage[page] = { sessions: 0, views: 0 };\n    }\n    thisWeekByPage[page].sessions += parseInt(row.metricValues[0].value);\n    thisWeekByPage[page].views += parseInt(row.metricValues[1].value);\n  }\n}\n\n// Group previous week's data\nconst prevWeekByPage = {};\nif (prevWeek.rows) {\n  for (const row of prevWeek.rows) {\n    const page = row.dimensionValues[0].value;\n    if (!prevWeekByPage[page]) {\n      prevWeekByPage[page] = { sessions: 0, views: 0 };\n    }\n    prevWeekByPage[page].sessions += parseInt(row.metricValues[0].value);\n    prevWeekByPage[page].views += parseInt(row.metricValues[1].value);\n  }\n}\n\n// Find anomalies\nconst anomalies = [];\nconst THRESHOLD = 0.3; // 30% change\n\nfor (const [page, current] of Object.entries(thisWeekByPage)) {\n  const previous = prevWeekByPage[page] || { sessions: 0, views: 0 };\n  \n  if (previous.views > 50) { // Only check pages with meaningful traffic\n    const change = (current.views - previous.views) / previous.views;\n    \n    if (change < -THRESHOLD) {\n      anomalies.push({\n        page,\n        type: 'traffic_drop',\n        current_views: current.views,\n        previous_views: previous.views,\n        change_percent: Math.round(change * 100)\n      });\n    } else if (change > THRESHOLD * 2) {\n      anomalies.push({\n        page,\n        type: 'traffic_spike',\n        current_views: current.views,\n        previous_views: previous.views,\n        change_percent: Math.round(change * 100)\n      });\n    }\n  }\n}\n\nreturn anomalies.map(a => ({ json: a }));"
+      },
+      "id": "analyze-anomalies",
+      "name": "Find Anomalies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-anomalies",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-anomalies",
+      "name": "Has Anomalies?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create task file for each anomaly\nconst items = $input.all();\nconst tasks = [];\n\nfor (const item of items) {\n  const anomaly = item.json;\n  const taskId = `analytics-${anomaly.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;\n  \n  let instructions;\n  if (anomaly.type === 'traffic_drop') {\n    instructions = `Traffic to ${anomaly.page} dropped ${Math.abs(anomaly.change_percent)}% this week (${anomaly.previous_views} → ${anomaly.current_views} views).\\n\\nInvestigate:\\n1. Check Google Search Console for ranking changes\\n2. Look for technical issues (broken links, slow loading)\\n3. Check if competitors published similar content\\n4. Review recent content changes\\n\\nProvide analysis and recommended actions.`;\n  } else {\n    instructions = `Traffic to ${anomaly.page} spiked ${anomaly.change_percent}% this week (${anomaly.previous_views} → ${anomaly.current_views} views).\\n\\nInvestigate:\\n1. What's driving this traffic?\\n2. Is it sustainable or a one-time spike?\\n3. Are there opportunities to capitalize on this?\\n4. Should we create related content?\\n\\nProvide analysis and recommendations.`;\n  }\n  \n  const task = {\n    id: taskId,\n    type: 'traffic_analysis',\n    priority: anomaly.type === 'traffic_drop' ? 'high' : 'medium',\n    created: new Date().toISOString(),\n    source: 'n8n-analytics-monitor',\n    context: {\n      page: anomaly.page,\n      anomaly_type: anomaly.type,\n      current_views: anomaly.current_views,\n      previous_views: anomaly.previous_views,\n      change_percent: anomaly.change_percent\n    },\n    instructions,\n    tools_allowed: ['WebSearch', 'Read', 'Write'],\n    result: null,\n    status: 'pending',\n    completed_at: null\n  };\n  \n  tasks.push({\n    json: task,\n    filename: `${taskId}.json`,\n    content: JSON.stringify(task, null, 2)\n  });\n}\n\nreturn tasks;"
+      },
+      "id": "create-tasks",
+      "name": "Create Task Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $env.AI_COMPANION_PATH }}/tasks/pending/{{ $json.filename }}",
+        "fileContent": "={{ $json.content }}"
+      },
+      "id": "write-task",
+      "name": "Write Task File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {},
+      "id": "no-anomalies",
+      "name": "No Anomalies",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    }
+  ],
+  "connections": {
+    "Daily 8am": {
+      "main": [
+        [
+          {
+            "node": "GA4 - This Week",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GA4 - Previous Week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GA4 - This Week": {
+      "main": [
+        [
+          {
+            "node": "Merge Weeks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GA4 - Previous Week": {
+      "main": [
+        [
+          {
+            "node": "Merge Weeks",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Weeks": {
+      "main": [
+        [
+          {
+            "node": "Find Anomalies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Anomalies": {
+      "main": [
+        [
+          {
+            "node": "Has Anomalies?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Anomalies?": {
+      "main": [
+        [
+          {
+            "node": "Create Task Files",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Anomalies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Task Files": {
+      "main": [
+        [
+          {
+            "node": "Write Task File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "ai-companion-analytics"
+  },
+  "tags": [
+    {
+      "name": "ai-companion"
+    },
+    {
+      "name": "analytics"
+    }
+  ]
+}

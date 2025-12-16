@@ -1,0 +1,218 @@
+#!/bin/bash
+# sam - Quick task creation for AI Companion
+#
+# Usage:
+#   sam "research topic X"           # Create a research task
+#   sam -p high "urgent thing"       # High priority task
+#   sam -t content "optimize post"   # Specific task type
+#   sam status                       # Show pending tasks
+#   sam log                          # Show today's journal
+#
+# This creates task files that your AI processes on the next wake-up.
+
+set -euo pipefail
+
+# Configuration
+AI_COMPANION_PATH="${AI_COMPANION_PATH:-$HOME/Documents/AI-Companion}"
+TASKS_DIR="$AI_COMPANION_PATH/tasks/pending"
+JOURNAL_DIR="$AI_COMPANION_PATH/journal"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Defaults
+PRIORITY="medium"
+TASK_TYPE="general"
+
+show_help() {
+    echo "sam - Quick task creation for AI Companion"
+    echo ""
+    echo "Usage:"
+    echo "  sam \"your task description\"     Create a task"
+    echo "  sam -p high \"urgent task\"       Set priority (low/medium/high/urgent)"
+    echo "  sam -t research \"topic\"         Set type (research/content/analysis/general)"
+    echo "  sam status                       Show pending tasks"
+    echo "  sam log                          Show today's journal"
+    echo "  sam wake                         Trigger immediate wake-up"
+    echo "  sam help                         Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  sam \"research electric RV charging infrastructure\""
+    echo "  sam -p urgent \"check why traffic dropped\""
+    echo "  sam -t content \"write blog post about Texas RV parks\""
+    echo ""
+    echo "Tasks are processed on the next scheduled wake-up."
+}
+
+show_status() {
+    echo -e "${BLUE}=== AI Companion Status ===${NC}"
+    echo ""
+
+    # Count tasks
+    local pending=$(find "$TASKS_DIR" -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
+    local completed=$(find "$AI_COMPANION_PATH/tasks/completed" -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
+    local awaiting=$(find "$AI_COMPANION_PATH/tasks/awaiting-input" -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
+
+    echo -e "Pending tasks:        ${YELLOW}$pending${NC}"
+    echo -e "Completed today:      ${GREEN}$completed${NC}"
+    echo -e "Awaiting your input:  ${CYAN}$awaiting${NC}"
+    echo ""
+
+    if [[ "$pending" -gt 0 ]]; then
+        echo -e "${BLUE}Pending Tasks:${NC}"
+        for f in "$TASKS_DIR"/*.json; do
+            if [[ -f "$f" ]]; then
+                local id=$(jq -r '.id // "unknown"' "$f" 2>/dev/null)
+                local type=$(jq -r '.type // "general"' "$f" 2>/dev/null)
+                local priority=$(jq -r '.priority // "medium"' "$f" 2>/dev/null)
+                local instructions=$(jq -r '.instructions // ""' "$f" 2>/dev/null | head -c 60)
+
+                local pcolor="$NC"
+                case "$priority" in
+                    urgent) pcolor="$RED" ;;
+                    high) pcolor="$YELLOW" ;;
+                esac
+
+                echo -e "  ${pcolor}[$priority]${NC} $type: $instructions..."
+            fi
+        done
+    fi
+
+    if [[ "$awaiting" -gt 0 ]]; then
+        echo ""
+        echo -e "${CYAN}Awaiting Your Input:${NC}"
+        for f in "$AI_COMPANION_PATH/tasks/awaiting-input"/*.json; do
+            if [[ -f "$f" ]]; then
+                local instructions=$(jq -r '.instructions // ""' "$f" 2>/dev/null | head -c 60)
+                local result=$(jq -r '.result // ""' "$f" 2>/dev/null | head -c 80)
+                echo "  - $instructions..."
+                if [[ -n "$result" ]]; then
+                    echo "    AI says: $result..."
+                fi
+            fi
+        done
+    fi
+}
+
+show_log() {
+    local today=$(date +%Y-%m-%d)
+    local journal_file="$JOURNAL_DIR/$today.md"
+
+    if [[ -f "$journal_file" ]]; then
+        echo -e "${BLUE}=== Journal: $today ===${NC}"
+        echo ""
+        cat "$journal_file"
+    else
+        echo -e "${YELLOW}No journal entry for today yet.${NC}"
+        echo "Your AI will create one on its next wake-up."
+    fi
+}
+
+trigger_wake() {
+    local wakeup_script="$AI_COMPANION_PATH/wakeup.sh"
+
+    if [[ -x "$wakeup_script" ]]; then
+        echo -e "${CYAN}Triggering immediate wake-up...${NC}"
+        "$wakeup_script"
+    else
+        echo -e "${RED}Wake-up script not found at: $wakeup_script${NC}"
+        exit 1
+    fi
+}
+
+create_task() {
+    local instructions="$1"
+    local task_id="sam-$(date +%s)-$(head -c 4 /dev/urandom | xxd -p)"
+    local created=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    local filename="$TASKS_DIR/$task_id.json"
+
+    # Ensure directory exists
+    mkdir -p "$TASKS_DIR"
+
+    # Determine tools based on type
+    local tools='["WebSearch", "Read", "Write"]'
+    case "$TASK_TYPE" in
+        research)
+            tools='["WebSearch", "Read", "Write"]'
+            ;;
+        content)
+            tools='["Read", "Write", "Edit", "WebSearch"]'
+            ;;
+        analysis)
+            tools='["Read", "WebSearch", "Write"]'
+            ;;
+    esac
+
+    # Create task JSON
+    cat > "$filename" << EOF
+{
+  "id": "$task_id",
+  "type": "$TASK_TYPE",
+  "priority": "$PRIORITY",
+  "created": "$created",
+  "source": "sam-cli",
+  "context": {
+    "created_by": "manual",
+    "cli_version": "1.0"
+  },
+  "instructions": "$instructions",
+  "tools_allowed": $tools,
+  "result": null,
+  "status": "pending",
+  "completed_at": null
+}
+EOF
+
+    echo -e "${GREEN}✓${NC} Task created: $task_id"
+    echo -e "  Priority: ${YELLOW}$PRIORITY${NC}"
+    echo -e "  Type: $TASK_TYPE"
+    echo -e "  Instructions: $instructions"
+    echo ""
+    echo "Task will be processed on the next wake-up."
+    echo -e "Run ${CYAN}sam wake${NC} to process immediately."
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p|--priority)
+            PRIORITY="$2"
+            shift 2
+            ;;
+        -t|--type)
+            TASK_TYPE="$2"
+            shift 2
+            ;;
+        help|--help|-h)
+            show_help
+            exit 0
+            ;;
+        status)
+            show_status
+            exit 0
+            ;;
+        log|journal)
+            show_log
+            exit 0
+            ;;
+        wake|wakeup)
+            trigger_wake
+            exit 0
+            ;;
+        *)
+            # This is the task description
+            if [[ -n "$1" ]]; then
+                create_task "$1"
+                exit 0
+            fi
+            ;;
+    esac
+done
+
+# No arguments - show help
+show_help
