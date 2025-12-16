@@ -204,10 +204,14 @@ sam wake
 For two-way communication with your AI, set up Discord. See `docs/discord-setup.md` for the full guide.
 
 Quick overview:
-1. Create a Discord bot
-2. Install Discord MCP server
-3. Configure channel ID in your AI's config
-4. Your AI reads/sends messages during wake-ups
+1. Create a Discord bot and get your token
+2. Clone and build `v-3/discordmcp` (requires Node 18+)
+3. Configure `claude_desktop_config.json` with the MCP server
+4. **Critical**: Run `claude mcp add-from-claude-desktop` to sync to CLI
+5. Your AI reads/sends messages during wake-ups
+
+> [!WARNING]
+> The Desktop app and CLI use separate MCP registries. You MUST run `claude mcp add-from-claude-desktop` after configuring Desktop, or the autonomous wake-up script won't have access to Discord.
 
 ## Management Commands
 

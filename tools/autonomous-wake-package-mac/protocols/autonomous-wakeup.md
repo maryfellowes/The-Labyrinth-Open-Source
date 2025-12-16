@@ -110,6 +110,27 @@ Add a brief entry to your journal (today's date file):
 
 ---
 
+## Discord Communication
+
+Read your Discord config from `config/discord.json`.
+
+### On Wake-Up:
+1. Check for new messages in your Discord channel since last session
+2. If there are messages from your human, acknowledge and respond
+3. If there are messages in the Discord MCP channel, respond to them or complete the tasks required
+
+### Available Tools
+
+You have two MCP tools from the `discord` server:
+- **`read-messages`** - Read recent messages from a channel
+  - Arguments: `{"channel": "CHANNEL_ID_OR_NAME", "limit": 10}`
+- **`send-message`** - Send a message to a channel
+  - Arguments: `{"channel": "CHANNEL_ID_OR_NAME", "message": "Your message"}`
+
+If tools error out, skip Discord and continue with the rest of the protocol.
+
+---
+
 ## Customization
 
 Add your own sections below for:

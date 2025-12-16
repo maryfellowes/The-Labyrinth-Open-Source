@@ -68,14 +68,17 @@ This guide walks you through setting up Discord as a two-way communication chann
 
 ## Step 4: Install the Discord MCP Server
 
-The Discord MCP server lets Claude Code interact with Discord.
+The Discord MCP server lets Claude Code interact with Discord. We recommend using the community `v-3/discordmcp` implementation.
+
+> [!IMPORTANT]
+> **Node.js 18+ is required.** Discord.js requires a modern Node version. If you use nvm, make sure to specify the full path to a Node 18+ executable in your config.
 
 ```bash
-# Clone the MCP servers repo (if you haven't)
-git clone https://github.com/modelcontextprotocol/servers.git ~/mcp-servers
+# Clone the Discord MCP server
+git clone https://github.com/v-3/discordmcp.git ~/Documents/AI-Companion/discordmcp
 
-# Navigate to Discord server
-cd ~/mcp-servers/src/discord
+# Navigate to the directory
+cd ~/Documents/AI-Companion/discordmcp
 
 # Install dependencies
 npm install
@@ -84,48 +87,61 @@ npm install
 npm run build
 ```
 
-Or use a community Discord MCP if available:
+If successful, you should see no errors and a `build/` directory will be created.
+
+### Verify your Node version
 
 ```bash
-# Check for existing Discord MCP packages
-npm search mcp discord
+# Check which Node versions you have (if using nvm)
+ls ~/.nvm/versions/node/
+
+# Use Node 18+ for the MCP server
+# You'll need the full path later, e.g.: /Users/yourname/.nvm/versions/node/v20.19.5/bin/node
 ```
 
-## Step 5: Configure Claude Code to Use Discord MCP
+## Step 5: Configure Claude Desktop and CLI
 
-Add the Discord MCP to your Claude Code configuration.
+The Discord MCP server needs to be configured for both **Claude Desktop** (GUI app) and **Claude CLI** (command line). These use different configs!
 
-### Option A: Project-level config
+### Step 5a: Configure Claude Desktop
 
-Create/edit `~/Documents/AI-Companion/.claude/settings.local.json`:
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "discord": {
-      "command": "node",
-      "args": ["/path/to/discord-mcp/dist/index.js"],
+      "command": "/Users/YOURNAME/.nvm/versions/node/v20.19.5/bin/node",
+      "args": ["/Users/YOURNAME/Documents/AI-Companion/discordmcp/build/index.js"],
       "env": {
-        "DISCORD_BOT_TOKEN": "your-bot-token-here"
+        "DISCORD_TOKEN": "your-bot-token-here"
       }
     }
-  },
-  "permissions": {
-    "allow": [
-      "Read(~/Documents/AI-Companion/**)",
-      "Edit(~/Documents/AI-Companion/**)",
-      "Write(~/Documents/AI-Companion/**)",
-      "Glob(~/Documents/AI-Companion/**)",
-      "WebSearch",
-      "mcp__discord__*"
-    ]
   }
 }
 ```
 
-### Option B: Global config
+> [!IMPORTANT]
+> Replace `YOURNAME` with your actual username and use the full path to Node 18+. Do NOT use just `"node"` as the command - it may resolve to an older version.
 
-Edit `~/.claude/settings.json` to add the MCP server globally.
+### Step 5b: Sync to Claude CLI (CRITICAL!)
+
+The Claude CLI has its **own separate** MCP registry. After configuring Desktop, run this command to sync:
+
+```bash
+claude mcp add-from-claude-desktop
+```
+
+This imports your Desktop MCP servers into the CLI. Verify it worked:
+
+```bash
+claude mcp list
+```
+
+You should see `discord` in the list.
+
+> [!WARNING]
+> If you skip this step, the autonomous wake-up script will NOT have access to Discord tools, even though the Desktop app works fine.
 
 ## Step 6: Create a Discord Config File
 
@@ -134,18 +150,15 @@ Create `~/Documents/AI-Companion/config/discord.json`:
 ```json
 {
   "enabled": true,
-  "channel_id": "YOUR_CHANNEL_ID_HERE",
-  "bot_name": "Jarvis",
+  "channel": "YOUR_CHANNEL_ID_OR_NAME",
+  "bot_name": "Sam",
   "message_prefix": "",
-  "read_history_count": 10,
-  "notification_settings": {
-    "on_wake": false,
-    "on_task_complete": true,
-    "on_error": true,
-    "on_need_input": true
-  }
+  "read_history_count": 10
 }
 ```
+
+> [!TIP]
+> The `channel` field can be either a channel ID (like `"1336755085841137808"`) or a channel name (like `"#sam"`). Channel names are more readable but IDs are more reliable.
 
 ## Step 7: Update Your Protocol
 
