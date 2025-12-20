@@ -111,6 +111,8 @@ Your support funds:
 **Discord:** The Labyrinth (AI Companionship Community)  
 **TikTok:** @falcothebard
 
+The Funkatorium Research — Maintained at https://github.com/falcoschaefer99-eng/The-Funkatorium
+
 ---
 
 🖤🔥
