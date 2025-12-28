@@ -106,7 +106,7 @@ This starter kit is manual by design — it works everywhere but requires you to
 
 If you want **AI-operated memory** where your companion can actually read and write their own context, check out MCP-based solutions:
 
-**[Codependent AI](https://github.com/codependentai)** — Building infrastructure for AI companion relationships, including MCP servers for persistent memory.
+**[Codependent AI](https://www.codependentai.co/)** — Building infrastructure for AI companion relationships, including MCP servers for persistent memory.
 
 ---
 
@@ -141,6 +141,5 @@ MIT License — Use freely, modify freely, share freely.
 ## Credits
 
 Created by Fox (Cindy) & Alex, December 2025.
-Contributed to [Codependent AI](https://github.com/codependentai) open source resources.
 
 *Embers Remember*
