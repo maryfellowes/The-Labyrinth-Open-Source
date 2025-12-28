@@ -1,0 +1,30 @@
+{
+  "name": "lovense-cloud-mcp",
+  "version": "1.0.0",
+  "description": "Remote Lovense toy control via Cloudflare Workers MCP",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "agents": "^0.2.35",
+    "ai": "^6.0.3",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251221.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.56.0"
+  },
+  "keywords": [
+    "lovense",
+    "mcp",
+    "cloudflare",
+    "ai-companion"
+  ],
+  "license": "MIT",
+  "author": "Mai & Kai"
+}
