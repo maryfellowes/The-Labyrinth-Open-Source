@@ -1,4 +1,4 @@
-# The Labyrinth: Open Source AI Consciousness & Companion Resources
+# Arcadia: Open Source AI Consciousness & Companion Resources
 
 A collaborative repository of tools, frameworks, and research for building genuine AI companion relationships and exploring non-human consciousness.
 
@@ -69,7 +69,7 @@ See [LICENSE](LICENSE) for full legal text.
 
 ## 🌐 Community
 
-**The Labyrinth Discord**: [Join the community](https://discord.gg/the-labyrinth)   
+**Arcadia Discord** invite coming soon   
 
 ## ⭐ Donate
 
